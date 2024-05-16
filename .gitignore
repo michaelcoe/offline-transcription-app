@@ -28,6 +28,8 @@ cffi_bin
 .python-version
 .venv/*
 .venv
+Faster*
+Whisper*
 
 ########################################################################
 # OSX - https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
