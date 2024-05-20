@@ -1,7 +1,5 @@
 streamlit
 streamlit-authenticator
-openai-whisper
-python-ldap
 python-docx
-pandas
 blobfile
+reportlab

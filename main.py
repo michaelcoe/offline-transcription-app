@@ -42,6 +42,8 @@ if __name__ == "__main__":
     # ------------------- Sidebar Information -------------------------
     st.title('Offline Transcription App')
 
+    # UC banner
+    st.sidebar.image('UCWhite.png')
     # Add a description in the sidebar
     st.sidebar.title('About this app')
     st.sidebar.markdown("""This app uses the offline version of the openAI Whisper Automatic Speech Recognition (ASR) package to transcribe uploaded audio or video files. 
