@@ -1,11 +1,12 @@
 import streamlit as st
+import numpy as np
 import zipfile
 import os 
-from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import Paragraph
+from reportlab.platypus import SimpleDocTemplate
 from pathlib import Path
 import subprocess
 from docx import Document
@@ -49,44 +50,49 @@ def transcription(audio_files, model, output, eo):
         if output == 'pdf':
             text_width=A4[0] / 2
             text_height=A4[1] / 2
-            x = A4[0]/4
-            y = A4[1]/4
 
             # initializing variables with values 
             temp_transcript = str(audio_file.parent.joinpath(audio_file.stem)) + '.pdf'
-            documentTitle = audio_file.stem
 
             # creating a pdf object 
-            pdf = canvas.Canvas(temp_transcript, pagesize=A4) 
-
-            # setting the title of the document 
-            pdf.setTitle(documentTitle) 
-
-            # creating a multiline text using  
-            # textline and for loop
+            pdf = SimpleDocTemplate(temp_transcript)
             styles = getSampleStyleSheet()
-            text = pdf.beginText(40, 680) 
-            text.setFont("Courier", 12) 
-            text.setFillColor(colors.black) 
-            with open(transcript_file, 'r') as f: 
-                lines = f.readlines()
-                
-            for line in lines:
-                p = Paragraph(line, styles["Normal"])
-                p.wrapOn(pdf, text_width, text_height)
-                p.drawOn(pdf, x, y)
 
-            # saving the pdf 
-            pdf.save()
+            with open(transcript_file, 'r') as file:
+                lines = file.readlines()
+
+            paragraphs = []
+
+            for i in np.arange(0, len(lines), 3):
+                line = ''.join(lines[i:i+3]).replace('\n','<br/>\n')
+                # line = line.replace('\n','<br/>\n')
+
+                p = Paragraph(line, styles["Normal"])   
+                p.wrapOn(pdf, text_width, text_height)
+                paragraphs.append(p)
+
+            pdf.build(paragraphs)
+
+            # Remove the original transcript and then replace with newly created file
+            os.remove(transcript_file)
+            transcript_file = Path(temp_transcript)
 
         elif output == 'docx':
             temp_transcript = str(audio_file.parent.joinpath(audio_file.stem)) + '.docx'
             document = Document()
+            p = document.add_paragraph()
+            
             with open(transcript_file, 'r') as f:
                 lines = f.readlines()
-                document.add_paragraph(lines)
+            
+            for line in lines:
+                p.add_run(line)
             
             document.save(temp_transcript)
+
+            # Remove the original transcript and then replace with newly created file
+            os.remove(transcript_file)
+            transcript_file = Path(temp_transcript)
 
         # Zip the files
         if return_code.check_returncode() == None:
@@ -94,6 +100,7 @@ def transcription(audio_files, model, output, eo):
 
         transcript_files.append(transcript_file)
 
+        # Remove audio and transcript files
         os.remove(audio_file)
         os.remove(transcript_file)
 
@@ -115,7 +122,8 @@ if __name__ == "__main__":
     st.sidebar.subheader("Note")
     st.sidebar.markdown("""This Whisper ASR package has been trained using machine learning, but is secure to use at UC. Your data will not be used to train future versions 
                         of the app. All files are automatically deleted after closing the browser window. Please ensure that you download the generated transcript file and
-                        save it in a secure location. You should also save the original audio or video file in a secure location.
+                        save it in a secure location. You should also save the original audio or video file in a secure location. For information about the models used and 
+                        the back-end implementation, as well as, the plan for future features, please see the [Wiki Page](https://wiki.canterbury.ac.nz/display/RCC/Offline+AI+Transcription)
                         """)
 
     st.sidebar.subheader("Support")

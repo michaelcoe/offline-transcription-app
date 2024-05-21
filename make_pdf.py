@@ -1,32 +1,22 @@
-import lorem
+from pathlib import Path
 # importing modules 
-from reportlab.pdfgen import canvas 
-from reportlab.lib import colors
+from docx import Document
 
-s1 = lorem.sentence()
-s2 = lorem.sentence()
-s3 = lorem.sentence()
+import numpy as np
 
-textLines = [s1, s2, s3]
+transcript_file = Path('./audio/')
 
-# initializing variables with values 
-fileName = 'sample.pdf'
-documentTitle = 'sample'
+temp_transcript = str(transcript_file.name) + '.docx'
+document = Document()
+p = document.add_paragraph()
 
-# creating a pdf object 
-pdf = canvas.Canvas(fileName) 
+with open(transcript_file, 'r') as f:
+    lines = f.readlines()
 
-# setting the title of the document 
-pdf.setTitle(documentTitle) 
+for line in lines:
+    p.add_run(line)
 
-# creating a multiline text using  
-# textline and for loop 
-text = pdf.beginText(40, 680) 
-text.setFont("Courier", 12) 
-text.setFillColor(colors.black) 
-for line in textLines: 
-    text.textLine(line) 
-pdf.drawText(text) 
+document.save(temp_transcript)
 
-# saving the pdf 
-pdf.save()
+# Remove the original transcript and then replace with newly created file
+transcript_file = Path(temp_transcript)

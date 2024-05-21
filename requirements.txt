@@ -3,3 +3,4 @@ streamlit-authenticator
 python-docx
 blobfile
 reportlab
+numpy
