@@ -113,7 +113,10 @@ if __name__ == "__main__":
     st.title('Offline Transcription App')
 
     # UC banner
-    st.sidebar.image('UCWhite.png')
+    if Path('./UCWhite.png').is_file():
+        st.sidebar.image('UCWhite.png')
+    else:
+        pass
     # Add a description in the sidebar
     st.sidebar.title('About this app')
     st.sidebar.markdown("""This app uses the offline version of the openAI Whisper Automatic Speech Recognition (ASR) package to transcribe uploaded audio or video files. 
@@ -183,7 +186,7 @@ if __name__ == "__main__":
 
     # Download the transcript
     zip_file_path = Path('./transcripts.zip')
-    if  not zip_file_path.is_file():
+    if not zip_file_path.is_file():
         zf = zipfile.ZipFile(zip_file_path, mode="w")
         zf.close()
     else:

@@ -27,7 +27,7 @@ def convert_seg(segment: faster_whisper.transcribe.Segment) -> str:
 
 # start_time = time.time()
 
-audio_file = Path('../audio').joinpath('test-recording.mkv')
+# audio_file = Path('../audio').joinpath('test-recording.mkv')
 
 # segments, info = model.transcribe(str(audio_file), language='en', beam_size=2, vad_filter=False)
 
@@ -42,6 +42,10 @@ audio_file = Path('../audio').joinpath('test-recording.mkv')
 # print(time.time() - start_time)
 # return_code = subprocess.call(['./Whisper-Faster-XXL/whisper-faster-xxl', f'{str(audio_file)} --language English --model medium --output_dir source'], 
 #                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-cmd = f'./Whisper-Faster-XXL/whisper-faster-xxl ./{str(audio_file)} --language English --model medium --output_format lrc --output_dir source'.split()
-return_code = subprocess.run(cmd, shell=False)
+# cmd = f'./Whisper-Faster-XXL/whisper-faster-xxl ./{str(audio_file)} --language English --model medium --output_format lrc --output_dir source'.split()
+# return_code = subprocess.run(cmd, shell=False)
 # return_code = subprocess.run(cmd, shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+files = list(Path('./audio').rglob("*.srt"))
+for file in files:
+    print(file)
