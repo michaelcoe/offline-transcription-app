@@ -4,3 +4,4 @@ python-docx
 blobfile
 reportlab
 numpy
+faster-whisper
