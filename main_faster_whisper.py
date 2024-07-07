@@ -1,17 +1,14 @@
 import streamlit as st
 import faster_whisper
 import math
-import logging
-import numpy as np
 import codecs
 
 from converters import srt2docx, srt2pdf, srt2txt
 
-from streamlit.web.server.websocket_headers import _get_websocket_headers
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile
 
 # set the details of the page
 st.set_page_config(
@@ -23,10 +20,6 @@ st.set_page_config(
 # create transcript session state
 if 'transcript' not in st.session_state:
     st.session_state['transcript'] = None
-
-# create ip address session state
-if 'ip_address' not in st.session_state:
-    st.session_state['ip_address'] = None
 
 # create dummy transcript file if doesn't exist.
 if 'transcript_file' not in st.session_state:
@@ -56,6 +49,12 @@ def get_remote_ip() -> str:
         return None
 
     return session_info.request.remote_ip
+
+# create ip address session state
+if 'ip_address' not in st.session_state:
+    st.session_state['ip_address'] = get_remote_ip()
+    with open('connections.txt', 'a') as cn:
+        cn.write(st.session_state['ip_address'] + '\n')
 
 # convert seconds to hms
 def convert_to_hms(seconds: float) -> str:
@@ -187,9 +186,7 @@ if __name__ == "__main__":
 
                 with st.expander(label='Preview the transcript'):
                     st.write(st.session_state['transcript'])
-
-    st.session_state['ip_address'] = get_remote_ip()
-    
+   
     # Output widgets
     col1, col2 = st.columns(2)
 
