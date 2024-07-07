@@ -1,11 +1,14 @@
 import streamlit as st
 import faster_whisper
 import math
-import os
+import logging
 import numpy as np
 import codecs
 
 from converters import srt2docx, srt2pdf, srt2txt
+
+from streamlit.web.server.websocket_headers import _get_websocket_headers
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
@@ -21,6 +24,10 @@ st.set_page_config(
 if 'transcript' not in st.session_state:
     st.session_state['transcript'] = None
 
+# create ip address session state
+if 'ip_address' not in st.session_state:
+    st.session_state['ip_address'] = None
+
 # create dummy transcript file if doesn't exist.
 if 'transcript_file' not in st.session_state:
     Path('./audio').mkdir(parents=True, exist_ok=True)
@@ -34,6 +41,23 @@ if 'transcript_file' not in st.session_state:
     st.session_state['transcript_file'] = transcript_file_path
     st.session_state['transcript_output'] = st.session_state['transcript_file']
 
+def get_remote_ip() -> str:
+    """Get remote ip."""
+
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
+
+        session_info = st.runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return None
+
+    return session_info.request.remote_ip
+
+# convert seconds to hms
 def convert_to_hms(seconds: float) -> str:
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
@@ -42,9 +66,11 @@ def convert_to_hms(seconds: float) -> str:
     
     return output
 
+# convert segment to a srt like format
 def convert_seg(segment: faster_whisper.transcribe.Segment) -> str:
     return f"{convert_to_hms(segment.start)} --> {convert_to_hms(segment.end)}\n{segment.text.lstrip()}\n\n"
 
+# transcribe the audio
 #@st.cache_resource(show_spinner="Transcribing...")
 def transcription(audio_file, model):
 
@@ -72,6 +98,7 @@ def transcription(audio_file, model):
 
     return True
 
+# Convert the transcript to various forms
 def convert_transcript():
     export = st.session_state['export']
     transcript_file = st.session_state['transcript_file']
@@ -109,7 +136,7 @@ if __name__ == "__main__":
                         team using UC services [eResearch consultancy form](https://services.canterbury.ac.nz/uc?id=sc_cat_item&sys_id=8effe377db992510e447f561f396197c)""")
 
     # ------------------------ Audio File form ---------------------------
-
+    
     # Model and audio file in a form
     with st.form("setup-form", clear_on_submit=True):
         model_select = st.radio('Select a model', 
@@ -160,7 +187,9 @@ if __name__ == "__main__":
 
                 with st.expander(label='Preview the transcript'):
                     st.write(st.session_state['transcript'])
-        
+
+    st.session_state['ip_address'] = get_remote_ip()
+    
     # Output widgets
     col1, col2 = st.columns(2)
 
