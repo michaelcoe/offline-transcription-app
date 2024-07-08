@@ -1,15 +1,15 @@
 import streamlit as st
-import numpy as np
+import faster_whisper
+import math
+import codecs
 import zipfile
 import os 
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import Paragraph
-from reportlab.platypus import SimpleDocTemplate
+
+from converters import srt2docx, srt2pdf, srt2txt
+
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 from pathlib import Path
-import subprocess
-from docx import Document
+from tempfile import NamedTemporaryFile
 
 st.set_page_config(
     page_title="Offline Transcription",
@@ -18,91 +18,94 @@ st.set_page_config(
 )
 
 if 'transcript' not in st.session_state:
-    st.session_state['transcript'] = None
     st.session_state['transcript_success'] = False
+    st.session_state['export'] = None
+
+def get_remote_ip() -> str:
+    """Get remote ip."""
+
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
+
+        session_info = st.runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return None
+
+    return session_info.request.remote_ip
+
+# create ip address session state
+if 'ip_address' not in st.session_state:
+    st.session_state['ip_address'] = get_remote_ip()
+    with open('connections.txt', 'a') as cn:
+        cn.write(st.session_state['ip_address'] + '\n')
+
+# convert seconds to hms
+def convert_to_hms(seconds: float) -> str:
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    milliseconds = math.floor((seconds % 1) * 1000)
+    output = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02},{milliseconds:03}"
+    
+    return output
+
+# convert segment to a srt like format
+def convert_seg(segment: faster_whisper.transcribe.Segment) -> str:
+    return f"{convert_to_hms(segment.start)} --> {convert_to_hms(segment.end)}\n{segment.text.lstrip()}\n\n"
 
 @st.cache_resource(show_spinner="Transcribing...")
-def transcription(audio_files, model, output, eo):
+def transcription(audio_files, model):
     transcript_files = []
     return_codes = []
+    export = st.session_state['export']
+
     compression = zipfile.ZIP_DEFLATED
     zf = zipfile.ZipFile("transcripts.zip", mode="w")
 
     for i, audio_file in enumerate(audio_files):
-    
-        if output == 'pdf' or output == 'docx':
-            temp_output = 'srt'
-        else:
-            temp_output = output
 
-        if eo == 'yes':
-            cmd = f'./Whisper-Faster-XXL/whisper-faster-xxl ./{str(audio_file)} --language English --model {model} --output_format {temp_output} --output_dir source'.split()
+        model = faster_whisper.WhisperModel(model, device="cpu", compute_type="int8")
+
+        if st.session_state['eo'] == 'yes':
+            segments, _ = model.transcribe(audio_file, language='en', beam_size=5, vad_filter=False)
         else:
-            cmd = f'./Whisper-Faster-XXL/whisper-faster-xxl ./{str(audio_file)} --model {model} --output_format {temp_output} --output_dir source'.split()      
+            segments, _ = model.transcribe(audio_file, beam_size=5, vad_filter=False)
         
-        # try the transcription or throw an error
-        #return_code = subprocess.run(cmd, shell=False)
-        return_code = subprocess.run(cmd, shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return_codes.append(return_code.check_returncode())
+        transcript_file_path = Path(str(audio_file.stem) + '.srt')
+        with open(transcript_file_path, 'w') as t:
+            for i, segment in enumerate(segments, start=1):
+                t.write(f"{i}\n{convert_seg(segment)}")
 
-        transcript_file = Path(str(audio_file.parent.joinpath(audio_file.stem)) + '.' + temp_output)
+        t.close()
+        
+        st.session_state['transcript_file'] = transcript_file_path
 
-        if output == 'pdf':
-            text_width=A4[0] / 2
-            text_height=A4[1] / 2
+        with codecs.open(st.session_state['transcript_file'], encoding='utf-8') as file:
+            data = file.read()
 
-            # initializing variables with values 
-            temp_transcript = str(audio_file.parent.joinpath(audio_file.stem)) + '.pdf'
+        st.session_state['transcript'] = data
+        st.session_state['transcript_output'] = st.session_state['transcript_file']
 
-            # creating a pdf object 
-            pdf = SimpleDocTemplate(temp_transcript)
-            styles = getSampleStyleSheet()
-
-            with open(transcript_file, 'r') as file:
-                lines = file.readlines()
-
-            paragraphs = []
-
-            for i in np.arange(0, len(lines), 3):
-                line = ''.join(lines[i:i+3]).replace('\n','<br/>\n')
-                # line = line.replace('\n','<br/>\n')
-
-                p = Paragraph(line, styles["Normal"])   
-                p.wrapOn(pdf, text_width, text_height)
-                paragraphs.append(p)
-
-            pdf.build(paragraphs)
-
-            # Remove the original transcript and then replace with newly created file
-            os.remove(transcript_file)
-            transcript_file = Path(temp_transcript)
-
-        elif output == 'docx':
-            temp_transcript = str(audio_file.parent.joinpath(audio_file.stem)) + '.docx'
-            document = Document()
-            p = document.add_paragraph()
-            
-            with open(transcript_file, 'r') as f:
-                lines = f.readlines()
-            
-            for line in lines:
-                p.add_run(line)
-            
-            document.save(temp_transcript)
-
-            # Remove the original transcript and then replace with newly created file
-            os.remove(transcript_file)
-            transcript_file = Path(temp_transcript)
+        if export == 'pdf':
+            st.session_state['transcript_output'] = srt2pdf.convert(transcript_file_path, st.session_state['transcript'])
+        elif export == 'docx':
+            st.session_state['transcript_output'] = srt2docx.convert(transcript_file_path, st.session_state['transcript'])
+        else:
+            st.session_state['transcript_output'] = srt2txt.convert(transcript_file_path, st.session_state['transcript'], export)
 
         # Zip the files
         if return_code.check_returncode() == None:
-            zf.write(transcript_file, compress_type=compression)
+            zf.write(transcript_file_path, compress_type=compression)
 
-        transcript_files.append(transcript_file)
+        transcript_files.append(transcript_file_path)
+        return_codes.append(None)
 
         # Remove audio and transcript files
         os.remove(audio_file)
-        os.remove(transcript_file)
+        os.remove(transcript_file_path)
 
     zf.close()
         
@@ -143,6 +146,7 @@ if __name__ == "__main__":
                         horizontal=True)
         eo = st.radio('English Only', 
                         ['yes', 'no'],
+                        key='eo',
                         index=1,
                         horizontal=True)
         
@@ -161,43 +165,44 @@ if __name__ == "__main__":
         transcribe_btn = st.form_submit_button("Transcribe")
     
     audio_files = []
-    for uploaded_file in uploaded_files: 
-        if uploaded_file is not None:
-            # write the audio file to a folder
-            audio_file = Path('./audio').joinpath(uploaded_file.name)       
-            with open(audio_file, 'wb') as f:
-                f.write(uploaded_file.getbuffer())
-                audio_files.append(audio_file)
-
-    # Transcribe the audio files
-    if eo == 'yes':
-        model = model_select + '.en'
-    else:
-        model = model_select
+    if transcribe_btn == True:
+        for uploaded_file in uploaded_files: 
+            if uploaded_file is not None:
+                # write to temporary file and get name                  
+                with NamedTemporaryFile() as temp:
+                    temp.write(uploaded_file.getvalue())
+                    temp.seek(0)
+                    audio_files.append(temp.name)
+                
+                    # Transcribe the audio file
+                    if st.session_state['eo'] == 'yes':
+                        model = st.session_state['model'] + '.en'
+                    else:
+                        model = st.session_state['model']
     
-    # Perform the transcription
-    return_codes, transcript_files = transcription(audio_files, model, output_select, eo)
+        # Perform the transcription
+        return_codes, transcript_files = transcription(audio_files, model, output_select, eo)
 
-    for i, return_code in enumerate(return_codes):
-        if return_code == None:
-            st.success(transcript_files[i].name + " was successful") 
+        for i, return_code in enumerate(return_codes):
+            if return_code == None:
+                st.success(transcript_files[i].name + " was successful") 
+            else:
+                st.warning("Something went wrong. Transcript" + transcript_files[i].name + 'failed' + "Please contact the eResearch Team. Or try refreshing the app.")
+
+        # Download the transcript
+        zip_file_path = Path('./transcripts.zip')
+        if not zip_file_path.is_file():
+            zf = zipfile.ZipFile(zip_file_path, mode="w")
+            zf.close()
         else:
-            st.warning("Something went wrong. Transcript" + transcript_files[i].name + 'failed' + "Please contact the eResearch Team. Or try refreshing the app.")
-
-    # Download the transcript
-    zip_file_path = Path('./transcripts.zip')
-    if not zip_file_path.is_file():
-        zf = zipfile.ZipFile(zip_file_path, mode="w")
-        zf.close()
-    else:
-        pass
-    
-    with open(zip_file_path, 'rb') as f: 
-        st.download_button(
-                label='Download Transcript',
-                data = f,
-                file_name='transcripts.zip'
-                )
+            pass
+        
+        with open(zip_file_path, 'rb') as f: 
+            st.download_button(
+                    label='Download Transcript',
+                    data = f,
+                    file_name='transcripts.zip'
+                    )
     
     # remove all files
     for transcript in transcript_files:
@@ -209,4 +214,4 @@ if __name__ == "__main__":
             os.remove(audio_file)
     
     os.remove(zip_file_path)
-    # st.write(st.session_state)
+    st.write(st.session_state)

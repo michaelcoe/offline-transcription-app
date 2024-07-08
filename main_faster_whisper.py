@@ -1,14 +1,14 @@
-import streamlit as st
-import faster_whisper
-import math
-import codecs
-
-from converters import srt2docx, srt2pdf, srt2txt
-
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+import math
+import codecs
+
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+import streamlit as st
+import faster_whisper
+
+from converters import srt2docx, srt2pdf, srt2txt
 
 # set the details of the page
 st.set_page_config(
@@ -21,16 +21,17 @@ st.set_page_config(
 if 'transcript' not in st.session_state:
     st.session_state['transcript'] = None
 
+if 'export' not in st.session_state:
+    st.session_state['export'] = 'srt'
+    st.session_state['disabled'] = True
+
 # create dummy transcript file if doesn't exist.
 if 'transcript_file' not in st.session_state:
     Path('./audio').mkdir(parents=True, exist_ok=True)
     transcript_file_path = Path('./audio/transcript.srt')
     with open(transcript_file_path, 'w+') as tt:
         tt.write(" ")
-    # with NamedTemporaryFile() as tt:
-    #     tt.write(b" ")
-    #     tt.seek(0)
-    #     transcript_file_path = tt.name
+
     st.session_state['transcript_file'] = transcript_file_path
     st.session_state['transcript_output'] = st.session_state['transcript_file']
 
@@ -53,7 +54,7 @@ def get_remote_ip() -> str:
 # create ip address session state
 if 'ip_address' not in st.session_state:
     st.session_state['ip_address'] = get_remote_ip()
-    with open('connections.txt', 'a') as cn:
+    with open('connections.txt', 'a', encoding='utf-8') as cn:
         cn.write(st.session_state['ip_address'] + '\n')
 
 # convert seconds to hms
@@ -62,32 +63,33 @@ def convert_to_hms(seconds: float) -> str:
     minutes, seconds = divmod(remainder, 60)
     milliseconds = math.floor((seconds % 1) * 1000)
     output = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02},{milliseconds:03}"
-    
+
     return output
 
 # convert segment to a srt like format
 def convert_seg(segment: faster_whisper.transcribe.Segment) -> str:
-    return f"{convert_to_hms(segment.start)} --> {convert_to_hms(segment.end)}\n{segment.text.lstrip()}\n\n"
+    return (f"{convert_to_hms(segment.start)} --> {convert_to_hms(segment.end)}\n"
+            f"{segment.text.lstrip()}\n\n")
 
 # transcribe the audio
 #@st.cache_resource(show_spinner="Transcribing...")
-def transcription(audio_file, model):
+def transcription(audio_file_name, model):
 
-    model = faster_whisper.WhisperModel(model, device="cpu", compute_type="int8")
+    fw_model = faster_whisper.WhisperModel(model, device="cpu", compute_type="int8")
 
     if st.session_state['eo'] == 'yes':
-        segments, _ = model.transcribe(audio_file, language='en', beam_size=5, vad_filter=False)
+        segments, _ = fw_model.transcribe(audio_file_name, language='en', beam_size=5, vad_filter=False)
     else:
-        segments, _ = model.transcribe(audio_file, beam_size=5, vad_filter=False)
-    
-    transcript_file_path = Path('./audio').joinpath(audio_file + '.srt')
-    with open(transcript_file_path, 'w') as t:
-        for i, segment in enumerate(segments, start=1):
-            t.write(f"{i}\n{convert_seg(segment)}")
+        segments, _ = fw_model.transcribe(audio_file_name, beam_size=5, vad_filter=False)
 
-    t.close()
-    
-    st.session_state['transcript_file'] = transcript_file_path
+    tr_file_path = Path(audio_file_name + '.srt')
+    with open(transcript_file_path, 'w', encoding='utf-8') as tr:
+        for i, segment in enumerate(segments, start=1):
+            tr.write(f"{i}\n{convert_seg(segment)}")
+
+    tr.close()
+
+    st.session_state['transcript_file'] = tr_file_path
 
     with codecs.open(st.session_state['transcript_file'], encoding='utf-8') as file:
         data = file.read()
@@ -102,12 +104,15 @@ def convert_transcript():
     export = st.session_state['export']
     transcript_file = st.session_state['transcript_file']
     if export == 'pdf':
-        st.session_state['transcript_output'] = srt2pdf.convert(transcript_file, st.session_state['transcript'])
+        st.session_state['transcript_output'] = srt2pdf.convert(transcript_file, 
+                                                                st.session_state['transcript'])
     elif export == 'docx':
-        st.session_state['transcript_output'] = srt2docx.convert(transcript_file, st.session_state['transcript'])
+        st.session_state['transcript_output'] = srt2docx.convert(transcript_file, 
+                                                                 st.session_state['transcript'])
     else:
-        st.session_state['transcript_output'] = srt2txt.convert(transcript_file, st.session_state['transcript'], export)
-    
+        st.session_state['transcript_output'] = srt2txt.convert(transcript_file, 
+                                                                st.session_state['transcript'], export)
+
     return True
 
 if __name__ == "__main__":
@@ -154,31 +159,27 @@ if __name__ == "__main__":
             "Upload file you want to transcribe",
             accept_multiple_files=False,
         )
-       
+
         transcribe_btn = st.form_submit_button("Transcribe")
 
-    if transcribe_btn == True: 
+    if transcribe_btn: 
         if uploaded_file is not None:
-            # write the audio file to a folder
-            # audio_file=Path('./audio').joinpath(uploaded_file.name)        
-            # with open(audio_file, 'wb') as f:
-            #     f.write(uploaded_file.getbuffer())
-            
+            # write to temporary file and get name           
             with NamedTemporaryFile() as temp:
                 temp.write(uploaded_file.getvalue())
                 temp.seek(0)
                 audio_file = temp.name
-            
+
                 # Transcribe the audio file
                 if st.session_state['eo'] == 'yes':
                     model = st.session_state['model'] + '.en'
                 else:
                     model = st.session_state['model']
-                
-                with st.spinner("Transcribing!..."):
-                    return_code = transcription(audio_file, model)
 
-                if return_code == True:
+                with st.spinner("Transcribing!..."):
+                    RETURN_CODE = transcription(audio_file, model)
+
+                if RETURN_CODE:
                     st.success('Transcription complete!')
                     st.session_state['disabled'] = False              
                 else:
@@ -186,13 +187,9 @@ if __name__ == "__main__":
 
                 with st.expander(label='Preview the transcript'):
                     st.write(st.session_state['transcript'])
-   
+
     # Output widgets
     col1, col2 = st.columns(2)
-
-    if 'export' not in st.session_state:
-        st.session_state['export'] = 'srt'
-        st.session_state['disabled'] = True
 
     with col1:
         export_select = st.selectbox('Select your file export format',
@@ -204,26 +201,26 @@ if __name__ == "__main__":
                             )
 
         if st.session_state['export'] == 'docx':
-            mime = 'docx'
+            MIME = 'docx'
         elif st.session_state['export'] == 'json':
-            mime = 'application/json'
+            MIME = 'application/json'
         elif st.session_state['export'] == 'pdf':
-            mime = 'application/octet-stream'
+            MIME = 'application/octet-stream'
         else:
-            mime = 'text/plain'    
-    
+            MIME = 'text/plain'
+
     with col2:
         st.write(" ")
         st.write(" ")
-        with open(st.session_state['transcript_output'], 'rb') as f: 
+        with open(st.session_state['transcript_output'], 'rb') as f:
             download = st.download_button(
                         label='Download Transcript',
                         data = f,
                         file_name=st.session_state['transcript_output'].name,
-                        mime = mime,
+                        MIME = MIME,
                         disabled=st.session_state['disabled'],
                         )
-    
+
             # if download:
             #     os.remove(st.session_state['transcript_output'])
 
