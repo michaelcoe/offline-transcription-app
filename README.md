@@ -3,6 +3,8 @@
 ## Description
 This application was developed using streamlit. The purpose of this project is to allow for Automatic Speech Recognition without uploaded audio files to a company server. This alleviates any issues with ethics with uploaded sensitive data.
 
+This Webapp implements the faster-whisper package <https://github.com/SYSTRAN/faster-whisper> and the vosk package <https://github.com/alphacep/vosk-api/tree/master> models.
+
 ## Visuals
 The overall architecture of the webapp is provided as following:
 
