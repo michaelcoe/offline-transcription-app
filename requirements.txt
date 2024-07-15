@@ -5,3 +5,5 @@ blobfile
 reportlab
 numpy
 faster-whisper
+vosk
+webvtt-py
