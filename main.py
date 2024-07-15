@@ -1,7 +1,6 @@
 """Streamlit Webapp to handle offline transcriptions"""
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-import math
 import codecs
 
 from streamlit.runtime.scriptrunner import get_script_run_ctx
@@ -35,6 +34,7 @@ if 'transcript_file' not in st.session_state:
     st.session_state['transcript_file'] = transcript_file_path
     st.session_state['transcript_output'] = st.session_state['transcript_file']
 
+# get IP of remote client
 def get_remote_ip() -> str:
     """Returns the remote ip for this each session."""
     try:
