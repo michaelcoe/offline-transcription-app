@@ -30,6 +30,7 @@ cffi_bin
 .venv
 Faster*
 Whisper*
+.cache
 
 ########################################################################
 # OSX - https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
