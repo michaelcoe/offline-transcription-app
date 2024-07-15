@@ -1,7 +1,4 @@
-# transcription-webapp
-
-## Name
-Offline Automatic Speech Recognition Application
+# Offline Automatic Speech Recognition Application
 
 ## Description
 This application was developed using streamlit. The purpose of this project is to allow for Automatic Speech Recognition without uploaded audio files to a company server. This alleviates any issues with ethics with uploaded sensitive data.
@@ -47,7 +44,13 @@ streamlit run main.py --server.port 8051
 ***
 
 ## License
-For open source projects, say how it is licensed.
+Offline Automatic Speech Recognition Application (c) by Michael Coe
+
+Offline Automatic Speech Recognition Application is licensed under a
+Creative Commons Attribution 4.0 International License.
+
+You should have received a copy of the license along with this
+work. If not, see <https://creativecommons.org/licenses/by/4.0/>
 
 ## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Active
