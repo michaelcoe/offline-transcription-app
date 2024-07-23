@@ -54,6 +54,7 @@ yarn-error.log*
 
 # Dependency directories
 node_modules/
+models/*
 
 # Coverage directory used by tools like istanbul
 coverage/
@@ -73,6 +74,7 @@ template-reactless/**/package-lock.json
 # VSCode
 ########################################################################
 .vscode/
+.code-workspace
 buildcontext/
 
 ########################################################################

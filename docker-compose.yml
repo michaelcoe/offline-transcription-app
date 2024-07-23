@@ -1,0 +1,8 @@
+version: '3'
+services:
+  transcription-app:
+    image: transcription-app:latest
+    build: .
+    command: streamlit run transcription-app/main.py
+    ports:
+      - 8051:8051

@@ -26,8 +26,8 @@ if 'export' not in st.session_state:
 
 # create dummy transcript file if doesn't exist.
 if 'transcript_file' not in st.session_state:
-    Path('./audio').mkdir(parents=True, exist_ok=True)
-    transcript_file_path = Path('./audio/transcript.srt')
+    Path('./app/audio').mkdir(parents=True, exist_ok=True)
+    transcript_file_path = Path('./app/audio/transcript.vtt')
     with open(transcript_file_path, 'w+', encoding='utf-8') as tt:
         tt.write(" ")
 
@@ -98,10 +98,7 @@ if __name__ == "__main__":
     st.title('Offline Transcription Service')
 
     # UC banner
-    if Path('./UCWhite.png').is_file():
-        st.sidebar.image('UCWhite.png')
-    else:
-        pass
+    st.sidebar.image('./img/UCWhite.png')
     # Add a description in the sidebar
     st.sidebar.title('About this app')
     st.sidebar.markdown("""This app uses the offline version of the openAI Whisper Automatic Speech
@@ -127,7 +124,7 @@ if __name__ == "__main__":
     with st.form("setup-form", clear_on_submit=True):
         model_select = st.radio('Select a model',
                         ['tiny', 'base', 'small', 'medium', 'large', 'large-v2', 'large-v3',
-                         'vosk'],
+                         'vosk-small', 'vosk-large'],
                         key='model',
                         index=3,
                         horizontal=True)
@@ -208,4 +205,4 @@ if __name__ == "__main__":
             # if download:
             #     os.remove(st.session_state['transcript_output'])
 
-    st.write(st.session_state)
+    #st.write(st.session_state)

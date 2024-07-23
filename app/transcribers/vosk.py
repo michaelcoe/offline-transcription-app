@@ -1,8 +1,11 @@
 from pathlib import Path
+import os
 import math
 import subprocess
 import json
 import textwrap
+import urllib
+import zipfile
 
 from webvtt import WebVTT, Caption
 from vosk import Model, KaldiRecognizer, SetLogLevel
@@ -26,7 +29,24 @@ def transcribe(audio_file_path, model, eo):
     SetLogLevel(-1)
     
     # initialize the model and set the transcription to word level
-    v_model = Model(lang="en-us")
+    cwd = Path(os.getcwd())
+    if model == 'vosk-large' or model == 'vosk-large.en':
+        path_to_model = cwd.joinpath("models/vosk/vosk-model-en-us-0.22")
+        url = "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip"
+    else:
+        path_to_model = cwd.joinpath("models/vosk/vosk-model-small-en-us-0.15")
+        url = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
+    
+    # check if model exists, and download if it doesnt
+    if path_to_model.is_dir():
+        v_model = Model(str(path_to_model))
+    else:
+        path_to_model.parent.mkdir(parents=True, exist_ok=True)
+        zip_file, _ = urllib.request.urlretrieve(url)
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            zf.extractall(path_to_model.parent)
+        v_model = Model(str(path_to_model))        
+    
     rec = KaldiRecognizer(v_model, SAMPLE_RATE)
     rec.SetWords(True)
     
