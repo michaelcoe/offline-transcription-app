@@ -118,7 +118,7 @@ if __name__ == "__main__":
     st.sidebar.subheader("Support")
     st.sidebar.markdown("""Our eResearch consultants are on hand to support your use of this app and
                         for support with data storage. For support, please contact the eResearch team
-                        using UC services [eResearch consultancy form](https://services.canterbury.ac.nz/uc?id=sc_cat_item&sys_id=8effe377db992510e447f561f396197c)""")
+                        using UC services [Offline Transcription Feedback and Issues](https://services.canterbury.ac.nz/uc?id=sc_cat_item&sys_id=728773f587d70a10a0840649dabb3597)""")
 
     # Model and audio file in a form
     with st.form("setup-form", clear_on_submit=True):
@@ -152,7 +152,10 @@ if __name__ == "__main__":
 
                 # Transcribe the audio file
                 if st.session_state['eo'] == 'yes':
-                    model = st.session_state['model'] + '.en'
+                    if st.session_state['model'].split('-')[0] == 'large':
+                        model = st.session_state['model']
+                    else:
+                        model = st.session_state['model'] + '.en'
                 else:
                     model = st.session_state['model']
 
