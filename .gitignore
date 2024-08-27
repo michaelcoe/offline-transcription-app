@@ -73,9 +73,9 @@ template-reactless/**/package-lock.json
 ########################################################################
 # VSCode
 ########################################################################
-.vscode/
-.code-workspace
-buildcontext/
+*.vscode/
+*.code-workspace
+buildcontext/*
 
 ########################################################################
 # Zip, pdf, docx, srt, txt
