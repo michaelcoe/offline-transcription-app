@@ -6,6 +6,8 @@ import json
 import textwrap
 import urllib
 import zipfile
+import torch
+import gc
 
 from webvtt import WebVTT, Caption
 from vosk import Model, KaldiRecognizer, SetLogLevel

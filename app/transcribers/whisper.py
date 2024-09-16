@@ -1,6 +1,8 @@
 from pathlib import Path
 import math
 import faster_whisper
+import torch
+import gc
 
 # convert seconds to hms
 def convert_to_hms(seconds: float) -> str:
@@ -20,8 +22,15 @@ def convert_seg(segment: faster_whisper.transcribe.Segment) -> str:
 
 def transcribe(audio_file_path, model, eo):
     """Uses faster_whisper to transcribe audio file and writes the segments"""
+    # determine the free memory
+    free = torch.cuda.mem_get_info()[0] / 1024 ** 3
+    total = torch.cuda.mem_get_info()[1] / 1024 ** 3
+    
     # initialize the model and set the transcription to word level
-    fw_model = faster_whisper.WhisperModel(model, device="cpu", compute_type="int8")
+    if torch.cuda.is_available() and free >= 5.0:
+        fw_model = faster_whisper.WhisperModel(model, device="cuda", compute_type="float16")
+    else:
+        fw_model = faster_whisper.WhisperModel(model, device="cpu", compute_type="int8")
 
     # Check if english only model happens
     if eo == 'yes':
@@ -29,6 +38,10 @@ def transcribe(audio_file_path, model, eo):
                                           vad_filter=False)
     else:
         segments, _ = fw_model.transcribe(audio_file_path, beam_size=5, vad_filter=False)
+
+    gc.collect()
+    torch.cuda.empty_cache()
+    del fw_model
 
     # write the webvtt file
     tr_file_path = Path(audio_file_path + '.vtt')
