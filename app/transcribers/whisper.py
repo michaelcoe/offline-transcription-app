@@ -27,7 +27,7 @@ def transcribe(audio_file_path, model, eo):
     #total = torch.cuda.mem_get_info()[1] / 1024 ** 3
     
     # initialize the model and set the transcription to word level
-    if torch.cuda.is_available() and free >= 5.0:
+    if torch.cuda.is_available() and free >= 6.0:
         gpu=True
         fw_model = faster_whisper.WhisperModel(model, device="cuda", compute_type="float16")
     else:
