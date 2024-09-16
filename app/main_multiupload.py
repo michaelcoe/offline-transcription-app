@@ -213,20 +213,21 @@ if __name__ == "__main__":
             pass
 
         with open(zip_file_path, 'rb') as f:
-            st.download_button(
+            download = st.download_button(
                     label='Download Transcript',
                     data = f,
                     file_name='transcripts.zip'
                     )
 
-    # remove all files
-    for transcript in transcript_files:
-        if transcript.is_file():
-            os.remove(transcript)
+        # remove all files
+        if download:
+            for transcript in transcript_files:
+                if transcript.is_file():
+                    os.remove(transcript)
 
-    for audio_file in audio_files:
-        if audio_file.is_file():
-            os.remove(audio_file)
+            for audio_file in audio_files:
+                if audio_file.is_file():
+                    os.remove(audio_file)
 
-    os.remove(zip_file_path)
-    st.write(st.session_state)
+            os.remove(zip_file_path)
+            st.write(st.session_state)
