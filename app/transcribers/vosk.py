@@ -80,6 +80,6 @@ def transcribe(audio_file_path, model, eo, ts):
                             f"{content}\n\n")
                 i += 1
             else:
-                tr.write(f"{content} ")
+                tr.write(f"{content}\n\n")
                 
     return tr_file_path

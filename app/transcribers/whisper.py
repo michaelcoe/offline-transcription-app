@@ -54,6 +54,6 @@ def transcribe(audio_file_path, model, eo, ts):
             if ts == 'yes':
                 tr.write(f"{i}\n{convert_seg(segment)}")
             else:
-                tr.write(f"{segment.text.lstrip()} ")
+                tr.write(f"{segment.text.lstrip()}\n\n")
 
     return tr_file_path
