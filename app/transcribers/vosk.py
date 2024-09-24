@@ -3,13 +3,9 @@ import os
 import math
 import subprocess
 import json
-import textwrap
 import urllib
 import zipfile
-import torch
-import gc
 
-from webvtt import WebVTT, Caption
 from vosk import Model, KaldiRecognizer, SetLogLevel
 
 # convert seconds to hms
