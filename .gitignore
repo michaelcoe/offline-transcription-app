@@ -32,6 +32,11 @@ Faster*
 Whisper*
 .cache
 
+# Other files
+*.ipynb
+*.vtt
+*.wav
+
 ########################################################################
 # OSX - https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
 ########################################################################
