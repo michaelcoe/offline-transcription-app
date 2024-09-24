@@ -20,7 +20,7 @@ def convert_seg(segment: faster_whisper.transcribe.Segment) -> str:
     return (f"{convert_to_hms(segment.start)} --> {convert_to_hms(segment.end)}\n"
             f"{segment.text.lstrip()}\n\n")
 
-def transcribe(audio_file_path, model, eo):
+def transcribe(audio_file_path, model, eo, ts):
     """Uses faster_whisper to transcribe audio file and writes the segments"""
     # determine the free memory
     free = torch.cuda.mem_get_info()[0] / 1024 ** 3
@@ -51,6 +51,9 @@ def transcribe(audio_file_path, model, eo):
     tr_file_path = Path(audio_file_path + '.vtt')
     with open(tr_file_path, 'w', encoding='utf-8') as tr:
         for i, segment in enumerate(segments, start=1):
-            tr.write(f"{i}\n{convert_seg(segment)}")
+            if ts == 'yes':
+                tr.write(f"{i}\n{convert_seg(segment)}")
+            else:
+                tr.write(f"{segment.text.lstrip()} ")
 
     return tr_file_path

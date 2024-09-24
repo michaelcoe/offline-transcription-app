@@ -22,7 +22,7 @@ def convert_to_hms(seconds: float) -> str:
 
     return output
 
-def transcribe(audio_file_path, model, eo):
+def transcribe(audio_file_path, model, eo, ts):
     """Uses vosk-api to transcribe audio file and writes the segments"""
     # set sample rate for model (16000) is desired
     SAMPLE_RATE = 16000
@@ -67,22 +67,23 @@ def transcribe(audio_file_path, model, eo):
                 results.append(rec.Result())
         results.append(rec.FinalResult())
 
-        # create a webvtt using webvtt-py
-        vtt = WebVTT()
+    tr_file_path = Path(audio_file_path + '.vtt')
+    with open(tr_file_path, 'w', encoding='utf-8') as tr:         
+        i = 1 # counter for each segment
         for _, res in enumerate(results):
             words = json.loads(res).get("result")
             if not words:
                 continue
-
+            
             start = convert_to_hms(words[0]["start"])
             end = convert_to_hms(words[-1]["end"])
             content = " ".join([w["word"] for w in words])
-
-            caption = Caption(start, end, textwrap.fill(content))
-            vtt.captions.append(caption)
-
-        # Save transcription to appropriate file path
-        tr_file_path = Path(audio_file_path + '.vtt')
-        vtt.save(tr_file_path)
-
+            
+            if ts == 'yes':
+                tr.write(f"{i}\n" f"{start} --> {end}\n"
+                            f"{content}\n\n")
+                i += 1
+            else:
+                tr.write(f"{content} ")
+                
     return tr_file_path

@@ -1,9 +1,10 @@
 streamlit
-streamlit-authenticator
 python-docx
 blobfile
 reportlab
 numpy
 faster-whisper
 vosk
-webvtt-py
+torch
+torchaudio
+torchvision

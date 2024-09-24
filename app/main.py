@@ -62,10 +62,12 @@ def transcription(audio_file_name, model):
     """Uses different packages to transcribe audio file and writes the segments"""
     if model[0:4] == 'vosk':
         st.session_state['transcript_file'] = vosk.transcribe(audio_file_name, model,
-                                                             st.session_state['eo'])
+                                                             st.session_state['eo'],
+                                                             st.session_state['ts'])
     else:
         st.session_state['transcript_file'] = whisper.transcribe(audio_file_name, model,
-                                                                st.session_state['eo'])
+                                                                st.session_state['eo'],
+                                                                st.session_state['ts'])
 
     with codecs.open(st.session_state['transcript_file'], encoding='utf-8') as file:
         data = file.read()
@@ -124,15 +126,14 @@ if __name__ == "__main__":
     with st.form("setup-form", clear_on_submit=True):
         model_select = st.radio('Select a model',
                         ['tiny', 'base', 'small', 'medium', 'large', 'large-v2', 'large-v3',
-                         'vosk-small', 'vosk-large'],
-                        key='model',
-                        index=3,
-                        horizontal=True)
-        eo = st.radio('English Only',
-                        ['yes', 'no'],
-                        key='eo',
-                        index=1,
-                        horizontal=True)
+                         'vosk-small', 'vosk-large'], key='model', index=5, horizontal=True,
+                        help='Choose which model you want to use of transcription')
+        
+        eo = st.radio('English Only', ['yes', 'no'], key='eo', index=0, horizontal=True,
+                      help='Choose only if the transcript is all in English')
+
+        ts = st.radio('Include Time Stamps', ['yes', 'no'], key='ts', index=0, horizontal=True,
+                      help='Should the transcription include timestamps')
 
         # File uploader
         uploaded_file = st.file_uploader(
