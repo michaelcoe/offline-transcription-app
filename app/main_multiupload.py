@@ -92,17 +92,19 @@ def convert_transcript(transcript_num):
     return True
 
 # Zip the files in a .zip file
-def zipFiles(transcript_file_paths):
+def zipFiles(zip_file_path, transcript_file_paths):
     compression = zipfile.ZIP_DEFLATED
-    zf = zipfile.ZipFile(st.session_state['session_id'] + ".zip", mode="w")
+    zf = zipfile.ZipFile(zip_file_path, mode="w")
         
     # Zip the files
-    for file_path in transcript_file_paths:
-        zf.write(file_path, compress_type=compression)
-
+    for i, file_path in enumerate(transcript_file_paths):
+        current_path = Path(file_path)
+        new_path = current_path.rename(str(current_path.parent.joinpath('transcript_' + str(i+1) + current_path.suffix)))
+        zf.write(new_path, compress_type=compression)
+        os.remove(new_path)
     zf.close()
 
-    return zf
+    return zip_file_path
 
 if __name__ == "__main__":
     # ------------------- Sidebar Information -------------------------
@@ -133,7 +135,7 @@ if __name__ == "__main__":
                         using UC services [Offline Transcription Feedback and Issues](https://services.canterbury.ac.nz/uc?id=sc_cat_item&sys_id=728773f587d70a10a0840649dabb3597)""")
 
     # Model and audio file in a form
-    with st.form("setup-form", clear_on_submit=False):
+    with st.form("setup-form", clear_on_submit=True):
         model_select = st.radio('Select a model',
                         ['tiny', 'base', 'small', 'medium', 'large', 'large-v2', 'large-v3',
                          'vosk-small', 'vosk-large'], key='model', index=5, horizontal=True,
@@ -198,22 +200,16 @@ if __name__ == "__main__":
                         convert_transcript(file_num)
                         transcript_files.append(st.session_state['transcript_output'])
 
+        zip_file_path = zipFiles(st.session_state['session_id'] + '.zip', transcript_files)
         for i, return_code in enumerate(return_codes):
-            if return_code is None:
-                st.success(transcript_files[i].name + " was successful")
+            if return_code:
+                st.success('Transcript ' + str(i+1) + " was successful")
             else:
-                st.warning("Something went wrong. Transcript" +
-                           transcript_files[i].name + 'failed' +
+                st.warning("Something went wrong. Transcript " +
+                           'Transcript ' + str(i+1) + ' failed. ' +
                            "Please contact the eResearch Team. Or try refreshing the app.")
-
+        
         # Download the transcript
-        zip_file_path = Path(st.session_state['session_id'] + '.zip')
-        if not zip_file_path.is_file():
-            zf = zipfile.ZipFile(zip_file_path, mode="w")
-            zf.close()
-        else:
-            pass
-
         with open(zip_file_path, 'rb') as f:
             download = st.download_button(
                     label='Download Transcript',
@@ -222,7 +218,7 @@ if __name__ == "__main__":
                     )
 
         # remove all files
-        if download:
+        if download:        
             for transcript in transcript_files:
                 if transcript.is_file():
                     os.remove(transcript)
