@@ -2,7 +2,6 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import math
 import codecs
 import zipfile
 import os
@@ -29,6 +28,7 @@ if 'export' not in st.session_state:
 
 if 'session_id' not in st.session_state:
     st.session_state['session_id'] = ''
+    
 # get IP of remote client
 def get_remote_ip() -> str:
     """Returns the remote ip for this each session."""
@@ -162,17 +162,7 @@ if __name__ == "__main__":
         transcribe_btn = st.form_submit_button("Transcribe")
             
 
-    if transcribe_btn:
-        # set the output mime format
-        if st.session_state['export'] == 'docx':
-            MIME = 'docx'
-        elif st.session_state['export'] == 'json':
-            MIME = 'application/json'
-        elif st.session_state['export'] == 'pdf':
-            MIME = 'application/octet-stream'
-        else:
-            MIME = 'text/plain'
-        
+    if transcribe_btn:       
         # set the model
         if st.session_state['eo'] == 'yes':
             if st.session_state['model'].split('-')[0] == 'large':
@@ -216,13 +206,11 @@ if __name__ == "__main__":
                     data = f,
                     file_name='transcripts.zip'
                     )
-
-        # remove all files
-        if download:        
-            for transcript in transcript_files:
-                if transcript.is_file():
-                    os.remove(transcript)
-
-            os.remove(zip_file_path)
+                   
+            # remove the zipfile if it exists
+            if zipfile.is_zipfile(zip_file_path):
+                os.remove(zip_file_path)
+            else:
+                pass
     
-    st.write(st.session_state)
+    # st.write(st.session_state)
