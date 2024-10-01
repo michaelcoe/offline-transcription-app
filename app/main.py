@@ -2,6 +2,7 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import codecs
+import uuid
 
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 import streamlit as st
@@ -43,6 +44,7 @@ def get_remote_ip() -> str:
             return None
 
         session_info = st.runtime.get_instance().get_client(ctx.session_id)
+        st.session_state['session_id'] = str(uuid.uuid4())
         if session_info is None:
             return None
     except Exception as e:
@@ -101,6 +103,7 @@ if __name__ == "__main__":
 
     # UC banner
     st.sidebar.image('./img/UCWhite.png')
+
     # Add a description in the sidebar
     st.sidebar.title('About this app')
     st.sidebar.markdown("""This app uses the offline version of the openAI Whisper Automatic Speech
@@ -123,7 +126,7 @@ if __name__ == "__main__":
                         using UC services [Offline Transcription Feedback and Issues](https://services.canterbury.ac.nz/uc?id=sc_cat_item&sys_id=728773f587d70a10a0840649dabb3597)""")
 
     # Model and audio file in a form
-    with st.form("setup-form", clear_on_submit=True):
+    with st.form("setup-form", clear_on_submit=False):
         model_select = st.radio('Select a model',
                         ['tiny', 'base', 'small', 'medium', 'large', 'large-v2', 'large-v3',
                          'vosk-small', 'vosk-large'], key='model', index=5, horizontal=True,
@@ -133,7 +136,7 @@ if __name__ == "__main__":
                       help='Choose only if the transcript is all in English')
 
         ts = st.radio('Include Time Stamps', ['yes', 'no'], key='ts', index=0, horizontal=True,
-                      help='Should the transcription include timestamps')
+                      help='Should the transcription be labeled with timestamps')
 
         # File uploader
         uploaded_file = st.file_uploader(
