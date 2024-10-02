@@ -28,14 +28,13 @@ cffi_bin
 .python-version
 .venv/*
 .venv
-Faster*
-Whisper*
 .cache
+secrets.toml
 
 # Other files
-*.ipynb
 *.vtt
 *.wav
+*.mkv
 
 ########################################################################
 # OSX - https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
