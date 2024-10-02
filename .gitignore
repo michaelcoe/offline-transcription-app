@@ -28,9 +28,8 @@ cffi_bin
 .python-version
 .venv/*
 .venv
-Faster*
-Whisper*
 .cache
+secrets.toml
 
 # Other files
 *.ipynb

@@ -170,7 +170,7 @@ if __name__ == "__main__":
             else:
                 model = st.session_state['model'] + '.en'
         else:
-            model = st.session_state['model']        
+            model = st.session_state['model']
     
         # transcribe the audio for each file
         return_codes = []
